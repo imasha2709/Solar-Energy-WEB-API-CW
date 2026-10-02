@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import crypto from "crypto";
 import { prisma } from "../lib/prisma";
 import { serializeData } from "../utils/serialize";
 
@@ -42,9 +43,52 @@ export async function getInstallationById(
     });
   }
 
-  return res.status(200).json(
-    serializeData(installation)
-  );
+  // Serialize Prisma Decimal values
+  const data = serializeData(installation);
+
+  // Generate ETag from response data
+  const etag = `"${crypto
+    .createHash("sha256")
+    .update(JSON.stringify(data))
+    .digest("hex")}"`;
+
+  // Generate Last-Modified from installation updatedAt
+  const lastModified = installation.updatedAt.toUTCString();
+
+  // Set caching headers
+  res.setHeader("ETag", etag);
+  res.setHeader("Last-Modified", lastModified);
+
+  // -----------------------------------------
+  // Conditional GET using If-None-Match
+  // -----------------------------------------
+
+  const requestEtag = req.headers["if-none-match"];
+
+  if (requestEtag === etag) {
+    return res.status(304).end();
+  }
+
+  // -----------------------------------------
+  // Conditional GET using If-Modified-Since
+  // -----------------------------------------
+
+  const requestLastModified =
+    req.headers["if-modified-since"];
+
+  if (requestLastModified) {
+    const requestDate = new Date(requestLastModified);
+    const resourceDate = new Date(installation.updatedAt);
+
+    if (
+      !Number.isNaN(requestDate.getTime()) &&
+      resourceDate <= requestDate
+    ) {
+      return res.status(304).end();
+    }
+  }
+
+  return res.status(200).json(data);
 }
 
 
@@ -288,7 +332,6 @@ export async function getInstallationReadings(
 
   /*
    * GenerationReading does not have a direct substation relation.
-   * The relationship is:
    *
    * GenerationReading
    *       ↓
@@ -352,7 +395,7 @@ export async function getInstallationReadings(
       : Math.ceil(totalCount / limit);
 
   const baseUrl =
-    `${req.protocol}://${req.get("host")}${req.path}`;
+    `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
 
   const createUrl = (targetPage: number) => {
     const params = new URLSearchParams();
