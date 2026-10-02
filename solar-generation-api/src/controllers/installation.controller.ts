@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { serializeData } from "../utils/serialize";
 
+// GET /api/v1/installations/:installationId
 export async function getInstallationById(
   req: Request,
   res: Response
@@ -17,7 +18,9 @@ export async function getInstallationById(
   }
 
   const installation = await prisma.solarInstallation.findUnique({
-    where: { id: installationId },
+    where: {
+      id: installationId,
+    },
     include: {
       substation: {
         include: {
@@ -39,10 +42,13 @@ export async function getInstallationById(
     });
   }
 
-  return res.status(200).json(serializeData(installation));
+  return res.status(200).json(
+    serializeData(installation)
+  );
 }
 
 
+// GET /api/v1/installations/:installationId/last-known-reading
 export async function getLastKnownReading(
   req: Request,
   res: Response
@@ -58,7 +64,9 @@ export async function getLastKnownReading(
   }
 
   const installation = await prisma.solarInstallation.findUnique({
-    where: { id: installationId },
+    where: {
+      id: installationId,
+    },
   });
 
   if (!installation) {
@@ -86,16 +94,18 @@ export async function getLastKnownReading(
     });
   }
 
-  return res.status(200).json(serializeData(reading));
+  return res.status(200).json(
+    serializeData(reading)
+  );
 }
 
 
+// GET /api/v1/installations/:installationId/readings
 export async function getInstallationReadings(
   req: Request,
   res: Response
 ) {
   const installationId = Number(req.params.installationId);
-
 
   if (!Number.isInteger(installationId)) {
     return res.status(400).json({
@@ -105,17 +115,9 @@ export async function getInstallationReadings(
     });
   }
 
-  
   const installation = await prisma.solarInstallation.findUnique({
     where: {
       id: installationId,
-    },
-    include: {
-      substation: {
-        include: {
-          district: true,
-        },
-      },
     },
   });
 
@@ -127,38 +129,11 @@ export async function getInstallationReadings(
     });
   }
 
- 
+  // Pagination
   const page = Number(req.query.page ?? 1);
   const limit = Number(req.query.limit ?? 20);
 
-  const sort = String(req.query.sort ?? "timestamp");
-  const order = String(req.query.order ?? "desc");
-
-  const from = req.query.from
-    ? String(req.query.from)
-    : undefined;
-
-  const to = req.query.to
-    ? String(req.query.to)
-    : undefined;
-
-  const provinceId = req.query.provinceId
-    ? Number(req.query.provinceId)
-    : undefined;
-
-  const districtId = req.query.districtId
-    ? Number(req.query.districtId)
-    : undefined;
-
-  const substationId = req.query.substationId
-    ? Number(req.query.substationId)
-    : undefined;
-
-  
-  if (
-    !Number.isInteger(page) ||
-    page < 1
-  ) {
+  if (!Number.isInteger(page) || page < 1) {
     return res.status(400).json({
       code: "INVALID_PAGE",
       message: "Page must be a positive integer.",
@@ -178,7 +153,10 @@ export async function getInstallationReadings(
     });
   }
 
- 
+  // Sorting
+  const sort = String(req.query.sort ?? "timestamp");
+  const order = String(req.query.order ?? "desc");
+
   if (sort !== "timestamp") {
     return res.status(400).json({
       code: "INVALID_SORT",
@@ -195,6 +173,68 @@ export async function getInstallationReadings(
     });
   }
 
+  // Date filters
+  const from =
+    req.query.from !== undefined
+      ? String(req.query.from)
+      : undefined;
+
+  const to =
+    req.query.to !== undefined
+      ? String(req.query.to)
+      : undefined;
+
+  let fromDate: Date | undefined;
+  let toDate: Date | undefined;
+
+  if (from) {
+    fromDate = new Date(from);
+
+    if (Number.isNaN(fromDate.getTime())) {
+      return res.status(400).json({
+        code: "INVALID_FROM_DATE",
+        message: "Invalid from date.",
+        detail: "Use a valid ISO 8601 date.",
+      });
+    }
+  }
+
+  if (to) {
+    toDate = new Date(to);
+
+    if (Number.isNaN(toDate.getTime())) {
+      return res.status(400).json({
+        code: "INVALID_TO_DATE",
+        message: "Invalid to date.",
+        detail: "Use a valid ISO 8601 date.",
+      });
+    }
+  }
+
+  if (fromDate && toDate && fromDate > toDate) {
+    return res.status(400).json({
+      code: "INVALID_TIME_RANGE",
+      message: "Invalid time range.",
+      detail:
+        "The from date must be earlier than or equal to the to date.",
+    });
+  }
+
+  // Optional jurisdiction filters
+  const provinceId =
+    req.query.provinceId !== undefined
+      ? Number(req.query.provinceId)
+      : undefined;
+
+  const districtId =
+    req.query.districtId !== undefined
+      ? Number(req.query.districtId)
+      : undefined;
+
+  const substationId =
+    req.query.substationId !== undefined
+      ? Number(req.query.substationId)
+      : undefined;
 
   if (
     provinceId !== undefined &&
@@ -229,124 +269,90 @@ export async function getInstallationReadings(
     });
   }
 
-  let fromDate: Date | undefined;
-  let toDate: Date | undefined;
+  // Build Prisma where conditions
+  const where: any = {
+    installationId,
+  };
 
-  if (from) {
-    fromDate = new Date(from);
+  if (fromDate || toDate) {
+    where.timestamp = {};
 
-    if (Number.isNaN(fromDate.getTime())) {
-      return res.status(400).json({
-        code: "INVALID_FROM_DATE",
-        message: "Invalid from date.",
-        detail: "Use a valid ISO 8601 date.",
-      });
+    if (fromDate) {
+      where.timestamp.gte = fromDate;
+    }
+
+    if (toDate) {
+      where.timestamp.lte = toDate;
     }
   }
 
-  if (to) {
-    toDate = new Date(to);
-
-    if (Number.isNaN(toDate.getTime())) {
-      return res.status(400).json({
-        code: "INVALID_TO_DATE",
-        message: "Invalid to date.",
-        detail: "Use a valid ISO 8601 date.",
-      });
-    }
-  }
-
-  if (
-    fromDate &&
-    toDate &&
-    fromDate > toDate
-  ) {
-    return res.status(400).json({
-      code: "INVALID_TIME_RANGE",
-      message: "Invalid time range.",
-      detail: "The from date must be earlier than or equal to the to date.",
-    });
-  }
-
- 
-  const jurisdictionConditions: any[] = [];
+  /*
+   * GenerationReading does not have a direct substation relation.
+   * The relationship is:
+   *
+   * GenerationReading
+   *       ↓
+   * SolarInstallation
+   *       ↓
+   * GridSubstation
+   *       ↓
+   * District
+   *       ↓
+   * Province
+   */
 
   if (provinceId !== undefined) {
-    jurisdictionConditions.push({
+    where.installation = {
       substation: {
         district: {
           provinceId,
         },
       },
-    });
+    };
   }
 
   if (districtId !== undefined) {
-    jurisdictionConditions.push({
+    where.installation = {
+      ...(where.installation ?? {}),
       substation: {
+        ...(where.installation?.substation ?? {}),
         districtId,
       },
-    });
+    };
   }
 
   if (substationId !== undefined) {
-    jurisdictionConditions.push({
+    where.installation = {
+      ...(where.installation ?? {}),
       substationId,
-    });
+    };
   }
 
- 
-  const dateConditions: any = {};
-
-  if (fromDate) {
-    dateConditions.gte = fromDate;
-  }
-
-  if (toDate) {
-    dateConditions.lte = toDate;
-  }
-
-
-  const where: any = {
-    installationId,
-  };
-
-  if (Object.keys(dateConditions).length > 0) {
-    where.timestamp = dateConditions;
-  }
-
-  if (jurisdictionConditions.length > 0) {
-    where.AND = jurisdictionConditions;
-  }
-
- 
+  // Pagination
   const skip = (page - 1) * limit;
 
-
   const [totalCount, readings] = await Promise.all([
-  prisma.generationReading.count({
-    where: {
-      installationId,
-    },
-  }),
+    prisma.generationReading.count({
+      where,
+    }),
 
-  prisma.generationReading.findMany({
-    where: {
-      installationId,
-    },
-    orderBy: {
-      timestamp: "asc",
-    },
-  }),
-]);
+    prisma.generationReading.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: {
+        timestamp: order as "asc" | "desc",
+      },
+    }),
+  ]);
 
- 
   const totalPages =
     totalCount === 0
       ? 0
       : Math.ceil(totalCount / limit);
 
-  const baseUrl = `${req.protocol}://${req.get("host")}${req.path}`;
+  const baseUrl =
+    `${req.protocol}://${req.get("host")}${req.path}`;
 
   const createUrl = (targetPage: number) => {
     const params = new URLSearchParams();
@@ -385,11 +391,10 @@ export async function getInstallationReadings(
       : null;
 
   const previous =
-    page > 1 && totalPages > 0
+    page > 1
       ? createUrl(page - 1)
       : null;
 
-  
   return res.status(200).json({
     page,
     limit,
@@ -399,4 +404,146 @@ export async function getInstallationReadings(
     previous,
     items: serializeData(readings),
   });
+}
+
+
+// POST /api/v1/installations/:installationId/readings
+export async function createGenerationReading(
+  req: Request,
+  res: Response
+) {
+  const installationId = Number(req.params.installationId);
+
+  if (!Number.isInteger(installationId)) {
+    return res.status(400).json({
+      code: "INVALID_INSTALLATION_ID",
+      message: "Installation ID must be an integer.",
+      detail: "The installationId path parameter is invalid.",
+    });
+  }
+
+  // Check installation exists
+  const installation =
+    await prisma.solarInstallation.findUnique({
+      where: {
+        id: installationId,
+      },
+    });
+
+  if (!installation) {
+    return res.status(404).json({
+      code: "INSTALLATION_NOT_FOUND",
+      message: "Solar installation not found.",
+      detail: `No solar installation exists with ID ${installationId}.`,
+    });
+  }
+
+  const {
+    timestamp,
+    powerKw,
+    cumulativeKwh,
+    voltage,
+  } = req.body;
+
+  // Required fields
+  if (
+    timestamp === undefined ||
+    powerKw === undefined ||
+    cumulativeKwh === undefined ||
+    voltage === undefined
+  ) {
+    return res.status(400).json({
+      code: "MISSING_READING_FIELDS",
+      message: "Required reading fields are missing.",
+      detail:
+        "timestamp, powerKw, cumulativeKwh and voltage are required.",
+    });
+  }
+
+  // Validate timestamp
+  const readingTimestamp = new Date(timestamp);
+
+  if (Number.isNaN(readingTimestamp.getTime())) {
+    return res.status(400).json({
+      code: "INVALID_TIMESTAMP",
+      message: "Invalid timestamp.",
+      detail: "Timestamp must be a valid ISO 8601 date.",
+    });
+  }
+
+  // Validate numbers
+  const power = Number(powerKw);
+  const cumulative = Number(cumulativeKwh);
+  const voltageValue = Number(voltage);
+
+  if (
+    !Number.isFinite(power) ||
+    !Number.isFinite(cumulative) ||
+    !Number.isFinite(voltageValue)
+  ) {
+    return res.status(400).json({
+      code: "INVALID_READING_VALUES",
+      message: "Invalid reading values.",
+      detail:
+        "powerKw, cumulativeKwh and voltage must be valid numbers.",
+    });
+  }
+
+  if (power < 0) {
+    return res.status(400).json({
+      code: "INVALID_POWER",
+      message: "Power cannot be negative.",
+      detail: "powerKw must be zero or greater.",
+    });
+  }
+
+  if (cumulative < 0) {
+    return res.status(400).json({
+      code: "INVALID_CUMULATIVE_ENERGY",
+      message: "Cumulative energy cannot be negative.",
+      detail: "cumulativeKwh must be zero or greater.",
+    });
+  }
+
+  if (voltageValue < 0) {
+    return res.status(400).json({
+      code: "INVALID_VOLTAGE",
+      message: "Voltage cannot be negative.",
+      detail: "voltage must be zero or greater.",
+    });
+  }
+
+  // Create reading
+  try {
+    const reading =
+      await prisma.generationReading.create({
+        data: {
+          installationId,
+          timestamp: readingTimestamp,
+          powerKw: power,
+          cumulativeKwh: cumulative,
+          voltage: voltageValue,
+        },
+      });
+
+    const location =
+      `${req.protocol}://${req.get("host")}` +
+      `/api/v1/installations/${installationId}/readings/${reading.id}`;
+
+    return res
+      .status(201)
+      .location(location)
+      .json(serializeData(reading));
+  } catch (error: any) {
+    if (error?.code === "P2002") {
+      return res.status(409).json({
+        code: "DUPLICATE_READING",
+        message: "A reading already exists for this timestamp.",
+        detail:
+          "The same installation cannot have two readings with the same timestamp.",
+      });
+    }
+
+    throw error;
+  }
 }

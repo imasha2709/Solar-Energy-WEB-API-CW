@@ -4,6 +4,7 @@ import {
   getInstallationById,
   getLastKnownReading,
   getInstallationReadings,
+  createGenerationReading,
 } from "../controllers/installation.controller";
 
 const router = Router();
@@ -21,6 +22,11 @@ router.get(
 router.get(
   "/:installationId/readings",
   getInstallationReadings
+);
+
+router.post(
+  "/:installationId/readings",
+  createGenerationReading
 );
 
 export default router;
