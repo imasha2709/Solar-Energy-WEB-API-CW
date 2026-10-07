@@ -1,5 +1,9 @@
 import { Router } from "express";
 
+import { authenticate } from "../middleware/auth.middleware";
+import { requireScope } from "../middleware/scope.middleware";
+import { authorizeProvince } from "../middleware/jurisdiction.middleware";
+
 import {
   getProvinces,
   getProvinceById,
@@ -8,12 +12,26 @@ import {
 
 const router = Router();
 
-router.get("/", getProvinces);
+router.get(
+  "/",
+  authenticate,
+  requireScope("analyst-read"),
+  getProvinces
+);
 
-router.get("/:provinceId", getProvinceById);
+router.get(
+  "/:provinceId",
+  authenticate,
+  requireScope("analyst-read"),
+  authorizeProvince,
+  getProvinceById
+);
 
 router.get(
   "/:provinceId/districts",
+  authenticate,
+  requireScope("analyst-read"),
+  authorizeProvince,
   getProvinceDistricts
 );
 

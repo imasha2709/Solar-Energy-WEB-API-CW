@@ -3,7 +3,7 @@ import crypto from "crypto";
 import { prisma } from "../lib/prisma";
 import { serializeData } from "../utils/serialize";
 
-// GET /api/v1/installations/:installationId
+
 export async function getInstallationById(
   req: Request,
   res: Response
@@ -43,35 +43,26 @@ export async function getInstallationById(
     });
   }
 
-  // Serialize Prisma Decimal values
   const data = serializeData(installation);
 
-  // Generate ETag from response data
   const etag = `"${crypto
     .createHash("sha256")
     .update(JSON.stringify(data))
     .digest("hex")}"`;
 
-  // Generate Last-Modified from installation updatedAt
+  
   const lastModified = installation.updatedAt.toUTCString();
 
-  // Set caching headers
+
   res.setHeader("ETag", etag);
   res.setHeader("Last-Modified", lastModified);
 
-  // -----------------------------------------
-  // Conditional GET using If-None-Match
-  // -----------------------------------------
-
+  
   const requestEtag = req.headers["if-none-match"];
 
   if (requestEtag === etag) {
     return res.status(304).end();
   }
-
-  // -----------------------------------------
-  // Conditional GET using If-Modified-Since
-  // -----------------------------------------
 
   const requestLastModified =
     req.headers["if-modified-since"];
@@ -92,7 +83,7 @@ export async function getInstallationById(
 }
 
 
-// GET /api/v1/installations/:installationId/last-known-reading
+
 export async function getLastKnownReading(
   req: Request,
   res: Response
@@ -144,7 +135,7 @@ export async function getLastKnownReading(
 }
 
 
-// GET /api/v1/installations/:installationId/readings
+
 export async function getInstallationReadings(
   req: Request,
   res: Response
@@ -173,7 +164,7 @@ export async function getInstallationReadings(
     });
   }
 
-  // Pagination
+
   const page = Number(req.query.page ?? 1);
   const limit = Number(req.query.limit ?? 20);
 
@@ -197,7 +188,7 @@ export async function getInstallationReadings(
     });
   }
 
-  // Sorting
+
   const sort = String(req.query.sort ?? "timestamp");
   const order = String(req.query.order ?? "desc");
 
@@ -217,7 +208,6 @@ export async function getInstallationReadings(
     });
   }
 
-  // Date filters
   const from =
     req.query.from !== undefined
       ? String(req.query.from)
@@ -264,7 +254,7 @@ export async function getInstallationReadings(
     });
   }
 
-  // Optional jurisdiction filters
+  
   const provinceId =
     req.query.provinceId !== undefined
       ? Number(req.query.provinceId)
@@ -313,7 +303,6 @@ export async function getInstallationReadings(
     });
   }
 
-  // Build Prisma where conditions
   const where: any = {
     installationId,
   };
@@ -329,20 +318,6 @@ export async function getInstallationReadings(
       where.timestamp.lte = toDate;
     }
   }
-
-  /*
-   * GenerationReading does not have a direct substation relation.
-   *
-   * GenerationReading
-   *       ↓
-   * SolarInstallation
-   *       ↓
-   * GridSubstation
-   *       ↓
-   * District
-   *       ↓
-   * Province
-   */
 
   if (provinceId !== undefined) {
     where.installation = {
@@ -371,7 +346,7 @@ export async function getInstallationReadings(
     };
   }
 
-  // Pagination
+ 
   const skip = (page - 1) * limit;
 
   const [totalCount, readings] = await Promise.all([
@@ -450,7 +425,7 @@ export async function getInstallationReadings(
 }
 
 
-// POST /api/v1/installations/:installationId/readings
+
 export async function createGenerationReading(
   req: Request,
   res: Response
@@ -465,7 +440,7 @@ export async function createGenerationReading(
     });
   }
 
-  // Check installation exists
+  
   const installation =
     await prisma.solarInstallation.findUnique({
       where: {
@@ -488,7 +463,7 @@ export async function createGenerationReading(
     voltage,
   } = req.body;
 
-  // Required fields
+  
   if (
     timestamp === undefined ||
     powerKw === undefined ||
@@ -503,7 +478,6 @@ export async function createGenerationReading(
     });
   }
 
-  // Validate timestamp
   const readingTimestamp = new Date(timestamp);
 
   if (Number.isNaN(readingTimestamp.getTime())) {
@@ -514,7 +488,7 @@ export async function createGenerationReading(
     });
   }
 
-  // Validate numbers
+
   const power = Number(powerKw);
   const cumulative = Number(cumulativeKwh);
   const voltageValue = Number(voltage);
@@ -556,7 +530,7 @@ export async function createGenerationReading(
     });
   }
 
-  // Create reading
+
   try {
     const reading =
       await prisma.generationReading.create({

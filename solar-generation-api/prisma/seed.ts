@@ -85,22 +85,19 @@ function generateSolarPower(
 async function main() {
   console.log("Starting database seed...");
 
-  /*
-   * Clear existing data.
-   * Foreign-key order matters.
-   */
-  await prisma.generationReading.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.solarInstallation.deleteMany();
-  await prisma.gridSubstation.deleteMany();
-  await prisma.district.deleteMany();
-  await prisma.province.deleteMany();
+ 
+  await prisma.$executeRawUnsafe(`
+  TRUNCATE TABLE
+    "GenerationReading",
+    "User",
+    "SolarInstallation",
+    "GridSubstation",
+    "District",
+    "Province"
+  RESTART IDENTITY CASCADE;
+`);
 
-  console.log("Existing data cleared.");
-
-  /*
-   * 1. Create provinces
-   */
+  
   const createdProvinces = [];
 
   for (const provinceData of provinces) {
@@ -116,9 +113,6 @@ async function main() {
     `Created ${createdProvinces.length} provinces.`
   );
 
-  /*
-   * 2. Create districts
-   */
   const createdDistricts = [];
 
   for (const province of createdProvinces) {
@@ -146,11 +140,7 @@ async function main() {
     `Created ${createdDistricts.length} districts.`
   );
 
-  /*
-   * 3. Create grid substations
-   *
-   * 25 districts × 2 = 50 substations
-   */
+  
   const createdSubstations = [];
 
   for (const district of createdDistricts) {
@@ -176,11 +166,7 @@ async function main() {
     `Created ${createdSubstations.length} substations.`
   );
 
-  /*
-   * 4. Create solar installations
-   *
-   * 50 substations × 10 = 500 installations
-   */
+ 
   const createdInstallations = [];
 
   for (const substation of createdSubstations) {
@@ -234,14 +220,7 @@ async function main() {
     `Created ${createdInstallations.length} solar installations.`
   );
 
-  /*
-   * 5. Create generation readings
-   *
-   * 7 days × 24 hours × 4 readings/hour
-   * = 672 readings per installation.
-   *
-   * 500 × 672 = 336,000 readings.
-   */
+  
   const now = new Date();
 
   const startDate = new Date(now);
@@ -340,9 +319,7 @@ async function main() {
     }
   }
 
-  /*
-   * Insert remaining readings.
-   */
+ 
   if (readingBatch.length > 0) {
     await prisma.generationReading.createMany(
       {
@@ -355,18 +332,14 @@ async function main() {
     `Created ${totalReadings} generation readings.`
   );
 
-  /*
-   * 6. Create demo users
-   */
+  
   const passwordHash =
     await bcrypt.hash(
       "Password123!",
       10
     );
 
-  /*
-   * National analyst
-   */
+ 
   await prisma.user.create({
     data: {
       name: "National Analyst",
@@ -378,9 +351,7 @@ async function main() {
     },
   });
 
-  /*
-   * Western Province analyst
-   */
+  
   const westernProvince =
     createdProvinces.find(
       (province) =>
@@ -403,9 +374,6 @@ async function main() {
     });
   }
 
-  /*
-   * Colombo District analyst
-   */
   const colomboDistrict =
     createdDistricts.find(
       (district) =>
@@ -428,12 +396,7 @@ async function main() {
     });
   }
 
-  /*
-   * Installation device
-   *
-   * This device belongs specifically
-   * to installation 1.
-   */
+ 
   const installationOne =
     createdInstallations[0];
 
