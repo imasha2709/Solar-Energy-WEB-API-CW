@@ -597,6 +597,51 @@ export const swaggerDocument: OpenAPIV3.Document = {
       },
     },
 
+    "/api/v1/districts/{districtId}/generation-summary": {
+  get: {
+    tags: ["Districts"],
+    summary: "Get district generation summary",
+    description:
+      "Returns a derived generation summary for a district.",
+
+    security: [{ bearerAuth: [] }],
+
+    parameters: [
+      {
+        name: "districtId",
+        in: "path",
+        required: true,
+        schema: {
+          type: "integer",
+        },
+        example: 1,
+      },
+    ],
+
+    responses: {
+      "200": {
+        description: "District generation summary",
+      },
+
+      "400": {
+        description: "Invalid district ID",
+      },
+
+      "401": {
+        description: "Authentication required",
+      },
+
+      "403": {
+        description: "Jurisdiction access denied",
+      },
+
+      "404": {
+        description: "District not found",
+      },
+    },
+  },
+},
+
     "/api/v1/installations/{installationId}": {
       get: {
         tags: ["Installations"],
