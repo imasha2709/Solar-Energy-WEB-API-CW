@@ -14,8 +14,6 @@ import {
 
 const router = Router();
 
-
-
 router.get(
   "/:installationId",
   authenticate,
@@ -23,7 +21,6 @@ router.get(
   authorizeInstallation,
   getInstallationById
 );
-
 
 router.get(
   "/:installationId/last-known-reading",
@@ -33,8 +30,6 @@ router.get(
   getLastKnownReading
 );
 
-
-
 router.get(
   "/:installationId/readings",
   authenticate,
@@ -42,7 +37,6 @@ router.get(
   authorizeInstallation,
   getInstallationReadings
 );
-
 
 router.post(
   "/:installationId/readings",
