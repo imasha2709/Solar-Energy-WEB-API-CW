@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Province {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  districts District[]
+  users     User[]
+}
+
+model District {
+  id         Int      @id @default(autoincrement())
+  name       String
+  code       String   @unique
+  provinceId Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  province    Province         @relation(fields: [provinceId], references: [id])
+  substations GridSubstation[]
+  users       User[]
+
+  @@index([provinceId])
+}
+
+model GridSubstation {
+  id         Int      @id @default(autoincrement())
+  name       String
+  code       String   @unique
+  districtId Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  district      District            @relation(fields: [districtId], references: [id])
+  installations SolarInstallation[]
+
+  @@index([districtId])
+}
+
+model SolarInstallation {
+  id           Int      @id @default(autoincrement())
+  name         String
+  meterId      String   @unique
+  inverterId   String?  @unique
+  capacityKw   Decimal  @db.Decimal(10, 2)
+  latitude     Decimal  @db.Decimal(9, 6)
+  longitude    Decimal  @db.Decimal(9, 6)
+  active       Boolean  @default(true)
+  substationId Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  readings    GenerationReading[]
+  substation  GridSubstation      @relation(fields: [substationId], references: [id])
+  deviceUsers User[]
+
+  @@index([substationId])
+}
+
+model GenerationReading {
+  id             BigInt   @id @default(autoincrement())
+  installationId Int
+  timestamp      DateTime
+  powerKw        Decimal  @db.Decimal(10, 3)
+  cumulativeKwh  Decimal  @db.Decimal(12, 3)
+  voltage        Decimal  @db.Decimal(8, 2)
+  createdAt      DateTime @default(now())
+
+  installation SolarInstallation @relation(fields: [installationId], references: [id])
+
+  @@unique([installationId, timestamp])
+  @@index([installationId, timestamp])
+  @@index([timestamp])
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+
+  provinceId     Int?
+  districtId     Int?
+  installationId Int?
+
+  province     Province?          @relation(fields: [provinceId], references: [id], onDelete: Restrict)
+  district     District?          @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  installation SolarInstallation? @relation(fields: [installationId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([provinceId])
+  @@index([districtId])
+  @@index([installationId])
+}
+
+enum UserRole {
+  NATIONAL_ANALYST
+  PROVINCE_ANALYST
+  DISTRICT_ANALYST
+  INSTALLATION_DEVICE
+}
