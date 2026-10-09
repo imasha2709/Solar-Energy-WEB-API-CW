@@ -11,12 +11,15 @@ export const swaggerDocument: OpenAPIV3.Document = {
   },
 
   servers: [
-    {
-      url: "http://localhost:3000",
-      description: "Local development server",
-    },
-  ],
-
+  {
+    url: "https://solar-energy-web-api-cw.vercel.app",
+    description: "Production server",
+  },
+  {
+    url: "http://localhost:3000",
+    description: "Local development server",
+  },
+],
   tags: [
     {
       name: "Authentication",
