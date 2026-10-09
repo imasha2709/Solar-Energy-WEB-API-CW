@@ -5,7 +5,8 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 import { createAccessToken } from "../utils/jwt";
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString =
+  process.env.HOSTED_DATABASE_URL ?? process.env.DATABASE_URL;
 
 if (!connectionString) {
   throw new Error("DATABASE_URL is not defined");
@@ -22,26 +23,19 @@ const prisma = new PrismaClient({
 function getScopes(role: string): string[] {
   switch (role) {
     case "NATIONAL_ANALYST":
-      return ["analyst-read"];
-
     case "PROVINCE_ANALYST":
-      return ["analyst-read"];
-
     case "DISTRICT_ANALYST":
       return ["analyst-read"];
 
     case "INSTALLATION_DEVICE":
-  return ["installation-write"];
+      return ["installation-write"];
 
     default:
       return [];
   }
 }
 
-export async function login(
-  req: Request,
-  res: Response
-) {
+export async function login(req: Request, res: Response) {
   try {
     const { email, password } = req.body;
 
@@ -53,13 +47,10 @@ export async function login(
       });
     }
 
-    const normalizedEmail =
-      String(email).trim().toLowerCase();
+    const normalizedEmail = String(email).trim().toLowerCase();
 
     const user = await prisma.user.findUnique({
-      where: {
-        email: normalizedEmail,
-      },
+      where: { email: normalizedEmail },
     });
 
     if (!user) {
@@ -70,11 +61,7 @@ export async function login(
       });
     }
 
-    const passwordValid =
-      await bcrypt.compare(
-        password,
-        user.passwordHash
-      );
+    const passwordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!passwordValid) {
       return res.status(401).json({
@@ -90,18 +77,14 @@ export async function login(
       userId: user.id,
       role: user.role,
       scope: scopes,
-      provinceId:
-        user.provinceId ?? undefined,
-      districtId:
-        user.districtId ?? undefined,
-      installationId:
-        user.installationId ?? undefined,
+      provinceId: user.provinceId ?? undefined,
+      districtId: user.districtId ?? undefined,
+      installationId: user.installationId ?? undefined,
     });
 
     return res.status(200).json({
       accessToken: token,
       tokenType: "Bearer",
-
       user: {
         id: user.id,
         name: user.name,
@@ -112,7 +95,7 @@ export async function login(
         installationId: user.installationId,
       },
     });
-    } catch (error) {
+  } catch (error) {
     console.error("Login error:", error);
 
     return res.status(500).json({
