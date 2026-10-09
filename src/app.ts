@@ -16,7 +16,13 @@ const app = express();
 app.set("etag", true);
 app.use(cors());
 app.use(express.json());
-
+app.get("/", (_req, res) => {
+  res.status(200).json({
+    message: "Solar Generation API is running",
+    documentation: "/api-docs",
+    version: "1.0.0",
+  });
+});
 
 app.use("/api/v1/auth", authRoutes);
 
