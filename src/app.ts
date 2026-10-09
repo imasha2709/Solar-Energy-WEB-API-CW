@@ -24,9 +24,9 @@ app.get("/", (_req, res) => {
   });
 });
 
-// TEMPORARY: remove after the database works
+
 app.get("/debug-db", (_req, res) => {
-  const u = process.env.HOSTED_DATABASE_URL || "";
+  const u = process.env.DATABASE_URL || "";
   res.json({
     present: u.length > 0,
     length: u.length,
