@@ -24,6 +24,18 @@ app.get("/", (_req, res) => {
   });
 });
 
+app.get("/debug-db", (_req, res) => {
+  const u = process.env.DATABASE_URL || "";
+  res.json({
+    present: u.length > 0,
+    length: u.length,
+    startsWith: u.slice(0, 11),
+    host: u.slice(u.lastIndexOf("@") + 1).split(/[/?]/)[0],
+    hasWhitespace: /\s/.test(u),
+    jwtSet: !!process.env.JWT_SECRET,
+  });
+});
+
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
