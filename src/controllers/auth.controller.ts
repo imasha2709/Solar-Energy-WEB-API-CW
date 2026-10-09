@@ -112,13 +112,13 @@ export async function login(
         installationId: user.installationId,
       },
     });
-  } catch (error) {
+    } catch (error) {
     console.error("Login error:", error);
 
     return res.status(500).json({
       code: "INTERNAL_SERVER_ERROR",
       message: "An internal server error occurred.",
-      detail: "Unable to process the login request.",
+      detail: error instanceof Error ? error.message : String(error),
     });
   }
 }
