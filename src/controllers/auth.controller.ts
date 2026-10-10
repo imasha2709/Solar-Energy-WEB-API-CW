@@ -5,7 +5,11 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 import { createAccessToken } from "../utils/jwt";
 
-const connectionString = process.env.DATABASE_URL;
+const HOSTED_URL = "PASTE_THE_PRISMA_STRING_HERE";
+
+const connectionString = process.env.VERCEL
+  ? HOSTED_URL
+  : process.env.DATABASE_URL;
 
 if (!connectionString) {
   throw new Error("DATABASE_URL is not defined");
