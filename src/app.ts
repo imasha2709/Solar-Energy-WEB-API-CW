@@ -26,17 +26,15 @@ app.get("/", (_req, res) => {
 
 
 app.get("/debug-db", (_req, res) => {
-  const u = process.env.DATABASE_URL || "";
+  const u = process.env.PG_URL || "";
   res.json({
-    present: u.length > 0,
-    length: u.length,
-    startsWith: u.slice(0, 11),
-    host: u.slice(u.lastIndexOf("@") + 1).split(/[/?]/)[0],
-    hasWhitespace: /\s/.test(u),
-    jwtSet: !!process.env.JWT_SECRET,
+    testVar: process.env.TEST_VAR ?? null,
+    pgLength: u.length,
+    pgStarts: u.slice(0, 11),
+    pgHost: u.slice(u.lastIndexOf("@") + 1).split(/[/?]/)[0],
+    dbKeys: Object.keys(process.env).filter(k => k.includes("DATABASE") || k.includes("PG_")),
   });
 });
-
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
