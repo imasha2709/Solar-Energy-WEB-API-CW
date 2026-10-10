@@ -1,4 +1,4 @@
-#COBSCCOMP251P-083
+# COBSCCOMP251P-083
 
 # SLSEA Real-Time Solar Generation Data API
 
@@ -30,6 +30,21 @@ The API provides structured access to solar installation information and generat
 | Swagger / OpenAPI | API documentation |
 | JWT | Token-based authentication, where implemented |
 | dotenv | Environment variable management |
+
+## Deployment and Database Hosting
+
+The Solar Generation Data API is deployed on **Vercel** and is designed to communicate with a PostgreSQL database through **Prisma ORM**.
+
+- **API Hosting:** Vercel
+- **Database:** PostgreSQL
+- **ORM:** Prisma
+- **Database Management:** Prisma Console, where applicable
+
+The deployed API uses environment variables to connect securely to the database. Database credentials and other sensitive configuration values are not included in the source code.
+
+**Live API URL:** `https://solar-energy-web-api-cw.vercel.app`
+
+**API Documentation:** `https://solar-energy-web-api-cw.vercel.app/api-docs`
 
 ## System Architecture
 
@@ -108,11 +123,10 @@ Before running the project locally, ensure you have installed:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR-GITHUB-USERNAME/Solar-Energy-WEB-API-CW.git
+git clone https://github.com/imasha2709/Solar-Energy-WEB-API-CW.git
 cd Solar-Energy-WEB-API-CW
 ```
 
-Replace `YOUR-GITHUB-USERNAME` with your actual GitHub username.
 
 ### 2. Install dependencies
 
@@ -125,18 +139,16 @@ npm install
 Create a `.env` file in the project root and configure the required environment variables.
 
 ```env
-DATABASE_URL="YOUR_POSTGRESQL_CONNECTION_STRING"
-JWT_SECRET="YOUR_SECRET_KEY"
+DATABASE_URL="POSTGRESQL_CONNECTION_STRING"
+JWT_SECRET="SECRET_KEY"
 PORT=3000
 ```
 
-Use the actual variable names expected by your application. If your project uses a separate Prisma configuration file or additional environment variables, configure those as required.
+Use the actual variable names expected by the application. this project used a separate Prisma configuration file or additional environment variables, configure those as required.
 
-**Security note:** Never commit `.env` files, database passwords, JWT secrets, or other credentials to GitHub. Use a `.env.example` file containing placeholders instead.
 
 ### 4. Configure the database
 
-Ensure the PostgreSQL database is running and that `DATABASE_URL` points to the correct database.
 
 Validate the Prisma schema:
 
@@ -164,23 +176,20 @@ npx prisma generate
 
 ### 6. Seed the database
 
-If the project includes a seed script, run the configured seed command. For example:
+
 
 ```bash
 npx prisma db seed
 ```
 
-Confirm that the required geographical records, solar installations, users, and generation readings have been populated successfully.
 
 ### 7. Start the development server
 
-Use the development script configured in `package.json`. For example:
 
 ```bash
+npm run build
 npm run dev
 ```
-
-If the project uses a different script, replace this command with the appropriate one.
 
 ## API Documentation
 
@@ -194,11 +203,9 @@ http://localhost:3000/api-docs
 
 The actual Swagger URL depends on the route configured in the application.
 
-For the deployed version, replace the placeholder below with the actual public documentation URL:
+**Live API Documentation:** `https://solar-energy-web-api-cw.vercel.app/api-docs`
 
-**Live API Documentation:** `ADD_YOUR_DEPLOYED_SWAGGER_URL_HERE`
-
-**Base API URL:** `ADD_YOUR_DEPLOYED_HTTPS_API_URL_HERE`
+**Base API URL:** `https://solar-energy-web-api-cw.vercel.app`
 
 ## API Endpoints
 
@@ -245,7 +252,7 @@ Before submission, verify that:
 6. Swagger documentation is publicly accessible if required.
 7. Environment variables and database credentials are configured securely.
 
-**Live deployment:** Add the verified production API URL here.
+**Live deployment:** https://solar-energy-web-api-cw.vercel.app.
 
 ## Environment Variables
 
