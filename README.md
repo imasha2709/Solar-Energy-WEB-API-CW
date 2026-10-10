@@ -144,7 +144,7 @@ JWT_SECRET="SECRET_KEY"
 PORT=3000
 ```
 
-Use the actual variable names expected by the application. this project used a separate Prisma configuration file or additional environment variables, configure those as required.
+Use the actual envirvariable names expected by the application. this project used a separate Prisma configuration file or additional environment variables, configure those as required.
 
 
 ### 4. Configure the database
